@@ -106,6 +106,10 @@ class DebugClient
 			{
 				$end = false;
 			}
+			if ( preg_match( '@<notify xmlns="urn.debugger_protocol_v1" xmlns:xdebug@', $read ) )
+			{
+				$end = false;
+			}
 		} while( !$end );
 	}
 

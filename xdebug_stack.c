@@ -741,8 +741,15 @@ void xdebug_error_cb(int type, const char *error_filename, const uint error_line
 	/* Start JIT if requested and not yet enabled */
 	xdebug_do_jit(TSRMLS_C);
 
-	/* Check for the pseudo exceptions to allow breakpoints on PHP error statuses */
 	if (XG(remote_enabled) && XG(breakpoints_allowed)) {
+		/* Send notification with warning/notice/error information */
+		if (XG(context).send_notifications && !XG(context).inhibit_notifications) {
+			if (!XG(context).handler->remote_notification(&(XG(context)), error_filename, error_lineno, error_type_str, buffer)) {
+				XG(remote_enabled) = 0;
+			}
+		}
+
+		/* Check for the pseudo exceptions to allow breakpoints on PHP error statuses */
 		if (
 			xdebug_hash_find(XG(context).exception_breakpoints, error_type_str, strlen(error_type_str), (void *) &extra_brk_info) ||
 			xdebug_hash_find(XG(context).exception_breakpoints, "*", 1, (void *) &extra_brk_info)

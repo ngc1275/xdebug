@@ -1201,6 +1201,11 @@ DBGP_FUNC(feature_get)
 			xdebug_xml_add_attribute(*retval, "supported", "1");
 		XDEBUG_STR_CASE_END
 
+		XDEBUG_STR_CASE("notify_ok")
+			xdebug_xml_add_text(*retval, xdebug_sprintf("%ld", XG(context).send_notifications));
+			xdebug_xml_add_attribute(*retval, "supported", "1");
+		XDEBUG_STR_CASE_END
+
 		XDEBUG_STR_CASE_DEFAULT
 			xdebug_xml_add_text(*retval, xdstrdup(lookup_cmd(CMD_OPTION('n')) ? "1" : "0"));
 			xdebug_xml_add_attribute(*retval, "supported", lookup_cmd(CMD_OPTION('n')) ? "1" : "0");
@@ -1258,6 +1263,10 @@ DBGP_FUNC(feature_set)
 
 		XDEBUG_STR_CASE("extended_properties")
 			options->extended_properties = strtol(CMD_OPTION('v'), NULL, 10);
+		XDEBUG_STR_CASE_END
+
+		XDEBUG_STR_CASE("notify_ok")
+			XG(context).send_notifications = strtol(CMD_OPTION('v'), NULL, 10);
 		XDEBUG_STR_CASE_END
 
 		XDEBUG_STR_CASE_DEFAULT
@@ -1381,7 +1390,13 @@ DBGP_FUNC(property_get)
 			RETURN_RESULT(XG(status), XG(reason), XDEBUG_ERROR_PROPERTY_NON_EXISTENT);
 		}
 	} else {
-		if (add_variable_node(*retval, CMD_OPTION('n'), 1, 0, 0, options TSRMLS_CC) == FAILURE) {
+		int add_var_retval;
+
+		XG(context).inhibit_notifications = 1;
+		add_var_retval = add_variable_node(*retval, CMD_OPTION('n'), 1, 0, 0, options TSRMLS_CC);
+		XG(context).inhibit_notifications = 0;
+
+		if (add_var_retval) {
 			options->max_data = old_max_data;
 			RETURN_RESULT(XG(status), XG(reason), XDEBUG_ERROR_PROPERTY_NON_EXISTENT);
 		}
@@ -2235,6 +2250,8 @@ int xdebug_dbgp_init(xdebug_con *context, int mode)
 	context->line_breakpoints = xdebug_llist_alloc((xdebug_llist_dtor) xdebug_llist_brk_dtor);
 	context->eval_id_lookup = xdebug_hash_alloc(64, (xdebug_hash_dtor) xdebug_hash_eval_info_dtor);
 	context->eval_id_sequence = 0;
+	context->send_notifications = 0;
+	context->inhibit_notifications = 0;
 
 	xdebug_dbgp_cmdloop(context, 1 TSRMLS_CC);
 
@@ -2422,6 +2439,49 @@ int xdebug_dbgp_stream_output(const char *string, unsigned int length TSRMLS_DC)
 		return 0;
 	}
 	return -1;
+}
+
+int xdebug_dbgp_notification(xdebug_con *context, const char *file, long lineno, char *type, char *message)
+{
+	xdebug_xml_node *response, *error_container;
+	TSRMLS_FETCH();
+
+	response = xdebug_xml_node_init("notify");
+	xdebug_xml_add_attribute(response, "xmlns", "urn:debugger_protocol_v1");
+	xdebug_xml_add_attribute(response, "xmlns:xdebug", "http://xdebug.org/dbgp/xdebug");
+	xdebug_xml_add_attribute(response, "name", "debug");
+
+	error_container = xdebug_xml_node_init("xdebug:message");
+	if (file) {
+		char *tmp_filename = (char*) file;
+		int tmp_lineno = lineno;
+		if (check_evaled_code(NULL, &tmp_filename, &tmp_lineno, 0 TSRMLS_CC)) {
+			xdebug_xml_add_attribute_ex(error_container, "filename", xdstrdup(tmp_filename), 0, 1);
+		} else {
+			xdebug_xml_add_attribute_ex(error_container, "filename", xdebug_path_to_url(file TSRMLS_CC), 0, 1);
+		}
+	}
+	if (lineno) {
+		xdebug_xml_add_attribute_ex(error_container, "lineno", xdebug_sprintf("%lu", lineno), 0, 1);
+	}
+	if (type) {
+		xdebug_xml_add_attribute_ex(error_container, "type", xdstrdup(type), 0, 1);
+	}
+	if (message) {
+		xdebug_xml_add_text(error_container, xdstrdup(message));
+	}
+	xdebug_xml_add_child(response, error_container);
+
+	/* Collate full message for the CDATA section */
+	{
+		char *full_message = xdebug_sprintf("%s: %s in %s on line %d", type, message, file, lineno);
+		xdebug_xml_add_text(response, full_message);
+	}
+
+	send_message(context, response TSRMLS_CC);
+	xdebug_xml_node_dtor(response);
+
+	return 1;
 }
 
 static char *create_eval_key_file(char *filename, int lineno)
