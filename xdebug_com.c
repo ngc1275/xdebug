@@ -27,6 +27,7 @@
 # include <unistd.h>
 # include <sys/socket.h>
 # include <netinet/tcp.h>
+# include <netinet/in.h>
 # include <netdb.h>
 #else
 # include <process.h>
