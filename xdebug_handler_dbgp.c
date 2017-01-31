@@ -2449,7 +2449,7 @@ int xdebug_dbgp_notification(xdebug_con *context, const char *file, long lineno,
 	response = xdebug_xml_node_init("notify");
 	xdebug_xml_add_attribute(response, "xmlns", "urn:debugger_protocol_v1");
 	xdebug_xml_add_attribute(response, "xmlns:xdebug", "http://xdebug.org/dbgp/xdebug");
-	xdebug_xml_add_attribute(response, "name", "debug");
+	xdebug_xml_add_attribute(response, "name", "error");
 
 	error_container = xdebug_xml_node_init("xdebug:message");
 	if (file) {

@@ -37,7 +37,7 @@ dbgpRun( $data, $commands );
 
 -> step_into -i 4
 <?xml version="1.0" encoding="iso-8859-1"?>
-<notify xmlns="urn:debugger_protocol_v1" xmlns:xdebug="http://xdebug.org/dbgp/xdebug" name="debug"><xdebug:message filename="file:///tmp/xdebug-dbgp-test.php" lineno="3" type="Notice"><![CDATA[Undefined variable: bar]]></xdebug:message><![CDATA[Notice: Undefined variable: bar in /tmp/xdebug-dbgp-test.php on line 3]]></notify>
+<notify xmlns="urn:debugger_protocol_v1" xmlns:xdebug="http://xdebug.org/dbgp/xdebug" name="error"><xdebug:message filename="file:///tmp/xdebug-dbgp-test.php" lineno="3" type="Notice"><![CDATA[Undefined variable: bar]]></xdebug:message><![CDATA[Notice: Undefined variable: bar in /tmp/xdebug-dbgp-test.php on line 3]]></notify>
 
 <?xml version="1.0" encoding="iso-8859-1"?>
 <response xmlns="urn:debugger_protocol_v1" xmlns:xdebug="http://xdebug.org/dbgp/xdebug" command="step_into" transaction_id="4" status="break" reason="ok"><xdebug:message filename="file:///tmp/xdebug-dbgp-test.php" lineno="4"></xdebug:message></response>
