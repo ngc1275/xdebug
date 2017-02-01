@@ -41,6 +41,7 @@
 #include "xdebug_hash.h"
 #include "xdebug_llist.h"
 #include "xdebug_mm.h"
+#include "xdebug_stack.h"
 #include "xdebug_var.h"
 #include "xdebug_xml.h"
 
@@ -2441,7 +2442,7 @@ int xdebug_dbgp_stream_output(const char *string, unsigned int length TSRMLS_DC)
 	return -1;
 }
 
-int xdebug_dbgp_notification(xdebug_con *context, const char *file, long lineno, char *type, char *message)
+int xdebug_dbgp_notification(xdebug_con *context, const char *file, long lineno, int type, char *type_string, char *message)
 {
 	xdebug_xml_node *response, *error_container;
 	TSRMLS_FETCH();
@@ -2456,7 +2457,7 @@ int xdebug_dbgp_notification(xdebug_con *context, const char *file, long lineno,
 		char *tmp_filename = (char*) file;
 		int tmp_lineno = lineno;
 		if (check_evaled_code(NULL, &tmp_filename, &tmp_lineno, 0 TSRMLS_CC)) {
-			xdebug_xml_add_attribute_ex(error_container, "filename", xdstrdup(tmp_filename), 0, 1);
+			xdebug_xml_add_attribute_ex(error_container, "filename", xdstrdup(tmp_filename), 1, 1);
 		} else {
 			xdebug_xml_add_attribute_ex(error_container, "filename", xdebug_path_to_url(file TSRMLS_CC), 0, 1);
 		}
@@ -2464,8 +2465,8 @@ int xdebug_dbgp_notification(xdebug_con *context, const char *file, long lineno,
 	if (lineno) {
 		xdebug_xml_add_attribute_ex(error_container, "lineno", xdebug_sprintf("%lu", lineno), 0, 1);
 	}
-	if (type) {
-		xdebug_xml_add_attribute_ex(error_container, "type", xdstrdup(type), 0, 1);
+	if (type_string) {
+		xdebug_xml_add_attribute_ex(error_container, "type_string", xdstrdup(type_string), 0, 1);
 	}
 	if (message) {
 		xdebug_xml_add_text(error_container, xdstrdup(message));
@@ -2474,8 +2475,10 @@ int xdebug_dbgp_notification(xdebug_con *context, const char *file, long lineno,
 
 	/* Collate full message for the CDATA section */
 	{
-		char *full_message = xdebug_sprintf("%s: %s in %s on line %d", type, message, file, lineno);
-		xdebug_xml_add_text(response, full_message);
+		char *stack_message;
+
+		stack_message = xdebug_handle_stack_trace(type, type_string, file, lineno, message);
+		xdebug_xml_add_text_encode(response, stack_message);
 	}
 
 	send_message(context, response TSRMLS_CC);

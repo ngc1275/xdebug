@@ -7,12 +7,12 @@ xdebug.remote_enable=1
 --FILE--
 <?php
 require 'dbgp/dbgpclient.php';
-$data = file_get_contents(dirname(__FILE__) . '/bug00990.inc');
+$data = file_get_contents(dirname(__FILE__) . '/bug00990-002.inc');
 
 $commands = array(
 	'step_into',
-	'step_into',
 	'feature_set -n notify_ok -v 1',
+	'step_into',
 	'step_into',
 	'detach'
 );
@@ -27,20 +27,23 @@ dbgpRun( $data, $commands );
 <?xml version="1.0" encoding="iso-8859-1"?>
 <response xmlns="urn:debugger_protocol_v1" xmlns:xdebug="http://xdebug.org/dbgp/xdebug" command="step_into" transaction_id="1" status="break" reason="ok"><xdebug:message filename="file:///tmp/xdebug-dbgp-test.php" lineno="2"></xdebug:message></response>
 
--> step_into -i 2
+-> feature_set -i 2 -n notify_ok -v 1
 <?xml version="1.0" encoding="iso-8859-1"?>
-<response xmlns="urn:debugger_protocol_v1" xmlns:xdebug="http://xdebug.org/dbgp/xdebug" command="step_into" transaction_id="2" status="break" reason="ok"><xdebug:message filename="file:///tmp/xdebug-dbgp-test.php" lineno="3"></xdebug:message></response>
+<response xmlns="urn:debugger_protocol_v1" xmlns:xdebug="http://xdebug.org/dbgp/xdebug" command="feature_set" transaction_id="2" feature="notify_ok" success="1"></response>
 
--> feature_set -i 3 -n notify_ok -v 1
+-> step_into -i 3
 <?xml version="1.0" encoding="iso-8859-1"?>
-<response xmlns="urn:debugger_protocol_v1" xmlns:xdebug="http://xdebug.org/dbgp/xdebug" command="feature_set" transaction_id="3" feature="notify_ok" success="1"></response>
+<response xmlns="urn:debugger_protocol_v1" xmlns:xdebug="http://xdebug.org/dbgp/xdebug" command="step_into" transaction_id="3" status="break" reason="ok"><xdebug:message filename="file:///tmp/xdebug-dbgp-test.php" lineno="3"></xdebug:message></response>
 
 -> step_into -i 4
 <?xml version="1.0" encoding="iso-8859-1"?>
-<notify xmlns="urn:debugger_protocol_v1" xmlns:xdebug="http://xdebug.org/dbgp/xdebug" name="error"><xdebug:message filename="file:///tmp/xdebug-dbgp-test.php" lineno="3" type="Notice"><![CDATA[Undefined variable: bar]]></xdebug:message><![CDATA[Notice: Undefined variable: bar in /tmp/xdebug-dbgp-test.php on line 3]]></notify>
+<notify xmlns="urn:debugger_protocol_v1" xmlns:xdebug="http://xdebug.org/dbgp/xdebug" name="error" encoding="base64"><xdebug:message filename="file:///tmp/xdebug-dbgp-test.php" lineno="3" type_string="Fatal error"><![CDATA[Uncaught Error: Class 'MyClass' not found in /tmp/xdebug-dbgp-test.php:3
+Stack trace:
+#0 {main}
+  thrown]]></xdebug:message><![CDATA[CkZhdGFsIGVycm9yOiBVbmNhdWdodCBFcnJvcjogQ2xhc3MgJ015Q2xhc3MnIG5vdCBmb3VuZCBpbiAvdG1wL3hkZWJ1Zy1kYmdwLXRlc3QucGhwIG9uIGxpbmUgMwoKRXJyb3I6IENsYXNzICdNeUNsYXNzJyBub3QgZm91bmQgaW4gL3RtcC94ZGVidWctZGJncC10ZXN0LnBocC%s]]></notify>
 
 <?xml version="1.0" encoding="iso-8859-1"?>
-<response xmlns="urn:debugger_protocol_v1" xmlns:xdebug="http://xdebug.org/dbgp/xdebug" command="step_into" transaction_id="4" status="break" reason="ok"><xdebug:message filename="file:///tmp/xdebug-dbgp-test.php" lineno="4"></xdebug:message></response>
+<response xmlns="urn:debugger_protocol_v1" xmlns:xdebug="http://xdebug.org/dbgp/xdebug" command="step_into" transaction_id="4" status="stopping" reason="ok"></response>
 
 -> detach -i 5
 <?xml version="1.0" encoding="iso-8859-1"?>

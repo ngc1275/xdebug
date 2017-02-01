@@ -121,7 +121,7 @@ struct _xdebug_remote_handler {
 	int (*remote_stream_output)(const char *string, unsigned int length TSRMLS_DC);
 
 	/* Notifications */
-	int (*remote_notification)(xdebug_con *h, const char *file, long lineno, char *type, char *message TSRMLS_DC);
+	int (*remote_notification)(xdebug_con *h, const char *file, long lineno, int type, char *type_string, char *message TSRMLS_DC);
 
 	/* Eval ID registration and removal */
 	int (*register_eval_id)(xdebug_con *h, function_stack_entry *fse);
